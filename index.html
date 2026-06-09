@@ -437,7 +437,7 @@ async function loadFromFB(){
     const d=await r.json();
     if(d&&d.owned)     STATE.owned    =d.owned;
     if(d&&d.exchanges) STATE.exchanges=d.exchanges||[];
-    setSyncStatus('✅ Synchronisé','var(--green)');
+    setSyncStatus('');
     return true;
   }catch(e){
     setSyncStatus('⚠️ '+e.message,'var(--orange)');
@@ -456,7 +456,7 @@ async function saveToFB(){
       body:JSON.stringify(STATE)});
     if(!r.ok) throw new Error('Erreur '+r.status);
     saveLocal();
-    setSyncStatus('✅ Synchronisé','var(--green)');
+    setSyncStatus('');
   }catch(e){
     setSyncStatus('⚠️ '+e.message,'var(--orange)');
   } finally { _syncing=false; }
