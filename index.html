@@ -166,7 +166,6 @@ textarea:focus{outline:none;border-color:var(--accent)}
   <button class="nav-btn" onclick="showPage('exchange')" id="nav-exchange"><span class="nav-icon">🔄</span>Échanges</button>
   <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:6px">
     <span id="sync-status" style="font-size:10px;color:var(--text2);white-space:nowrap">☁️</span>
-    <button onclick="openModal('sync-modal')" style="background:none;border:1px solid var(--border);border-radius:20px;padding:3px 8px;cursor:pointer;font-size:14px;color:var(--text2)" title="Configurer la sync">⚙️</button>
     <button id="theme-btn" onclick="toggleTheme()" style="background:none;border:1px solid var(--border);border-radius:20px;padding:3px 8px;cursor:pointer;font-size:14px;color:var(--text2)" title="Mode jour/nuit">🌙</button>
   </div>
 </nav>
@@ -257,16 +256,18 @@ textarea:focus{outline:none;border-color:var(--accent)}
 <div class="modal-overlay" id="sync-modal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('sync-modal')">✕</button>
-    <div class="modal-title">☁️ Sync GitHub</div>
+    <div class="modal-title">☁️ Sync — Firebase</div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.8">
-      Une seule config, une seule fois :<br>
-      <b>1.</b> <a href="https://github.com/settings/tokens/new" target="_blank" style="color:var(--accent)">Créer un token GitHub</a> → cochez <b>repo</b> → copier<br>
-      <b>2.</b> Coller ci-dessous → Activer<br>
-      <b>3.</b> C'est tout — vos données se synchronisent automatiquement sur tous vos appareils
+      À faire <b>une seule fois</b> :<br>
+      1. <a href="https://console.firebase.google.com" target="_blank" style="color:var(--accent)">console.firebase.google.com</a> → Nouveau projet<br>
+      2. Menu gauche → <b>Realtime Database</b> → Créer → Mode test<br>
+      3. Copier l'URL (ex: <code>https://mon-projet-rtdb.firebaseio.com</code>)<br>
+      4. Coller ci-dessous → Activer<br><br>
+      Ensuite : <b>tous ceux qui ont le lien de l'app voient et éditent la même collection</b>, sans rien configurer.
     </div>
     <div style="margin-bottom:14px">
-      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Personal Access Token GitHub (<code>ghp_...</code>)</label>
-      <input id="gh-token-input" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">URL Firebase Realtime Database</label>
+      <input id="fb-url-input" type="text" placeholder="https://mon-projet-default-rtdb.firebaseio.com" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px">
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary" onclick="setupSync()">✅ Activer</button>
@@ -410,87 +411,65 @@ let _pmCode=null;
 let _pressTimer=null;
 
 // ============================================================
-// SYNC — GitHub API (stockage dans le repo GitHub)
+// SYNC — Firebase Realtime Database (public read/write, no config needed)
+// URL à configurer une seule fois ci-dessous
 // ============================================================
-const GH_OWNER = 'arikgr';
-const GH_REPO  = 'arikgr';
-const GH_FILE  = 'panini-data.json';
-const GH_BRANCH= 'main';
-let _ghToken = localStorage.getItem('panini26_ghtoken') || null;
-let _ghSha   = null;
+const FB_URL = 'https://panini-57496-default-rtdb.europe-west1.firebasedatabase.app';
 let _saveTimer = null;
-let _syncing = false;
+let _syncing   = false;
 
 function setSyncStatus(msg, color='var(--text2)'){
-  const el = document.getElementById('sync-status');
-  if(el){ el.textContent=msg; el.style.color=color; }
+  const el=document.getElementById('sync-status');
+  if(el){el.textContent=msg;el.style.color=color;}
 }
 
-function ghHeaders(){
-  return {
-    'Authorization': 'token ' + _ghToken,
-    'Content-Type': 'application/json',
-    'Accept': 'application/vnd.github+json'
-  };
+function fbUrl(){
+  return FB_URL + '/panini.json';
 }
 
-async function loadFromGH(){
-  if(!_ghToken){ setSyncStatus('⚙️ Config requise'); return false; }
+async function loadFromFB(){
+  const url=fbUrl();
+  if(!url){ setSyncStatus('⚙️ Config requise'); return false; }
   try{
     setSyncStatus('⏳ Chargement…');
-    const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}?ref=${GH_BRANCH}&t=${Date.now()}`;
-    const r = await fetch(url, { headers: ghHeaders() });
-    if(r.status === 404){
-      // File doesn't exist yet — will be created on first save
-      setSyncStatus('✅ Prêt', 'var(--green)');
-      return true;
-    }
+    const r=await fetch(url+'?t='+Date.now());
     if(!r.ok) throw new Error('Erreur '+r.status);
-    const data = await r.json();
-    _ghSha = data.sha;
-    const decoded = JSON.parse(atob(data.content.replace(/\n/g,'')));
-    if(decoded.owned)   STATE.owned     = decoded.owned;
-    if(decoded.exchanges) STATE.exchanges = decoded.exchanges || [];
-    setSyncStatus('✅ Synchronisé', 'var(--green)');
+    const d=await r.json();
+    if(d&&d.owned)     STATE.owned    =d.owned;
+    if(d&&d.exchanges) STATE.exchanges=d.exchanges||[];
+    setSyncStatus('✅ Synchronisé','var(--green)');
     return true;
   }catch(e){
-    setSyncStatus('⚠️ '+e.message, 'var(--orange)');
+    setSyncStatus('⚠️ '+e.message,'var(--orange)');
     return false;
   }
 }
 
-async function saveToGH(){
-  if(!_ghToken){ saveLocal(); return; }
+async function saveToFB(){
+  const url=fbUrl();
+  if(!url){ saveLocal(); return; }
   if(_syncing) return;
-  _syncing = true;
-  setSyncStatus('💾 Sauvegarde…');
+  _syncing=true; setSyncStatus('💾 Sauvegarde…');
   try{
-    const body = {
-      message: 'panini: update collection',
-      content: btoa(unescape(encodeURIComponent(JSON.stringify(STATE)))),
-      branch:  GH_BRANCH,
-    };
-    if(_ghSha) body.sha = _ghSha;
-    const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`;
-    const r = await fetch(url, { method:'PUT', headers: ghHeaders(), body: JSON.stringify(body) });
-    if(!r.ok){ const e=await r.json(); throw new Error(e.message||r.status); }
-    const data = await r.json();
-    _ghSha = data.content.sha;
+    const r=await fetch(url,{method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(STATE)});
+    if(!r.ok) throw new Error('Erreur '+r.status);
     saveLocal();
-    setSyncStatus('✅ Synchronisé', 'var(--green)');
+    setSyncStatus('✅ Synchronisé','var(--green)');
   }catch(e){
-    setSyncStatus('⚠️ '+e.message, 'var(--orange)');
+    setSyncStatus('⚠️ '+e.message,'var(--orange)');
   } finally { _syncing=false; }
 }
 
 function saveLocal(){
-  try{ localStorage.setItem('panini26v3', JSON.stringify(STATE)); }catch(e){}
+  try{localStorage.setItem('panini26v3',JSON.stringify(STATE));}catch(e){}
 }
 
 function save(){
   saveLocal();
   clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(()=>saveToGH(), 1500);
+  _saveTimer=setTimeout(()=>saveToFB(),1500);
 }
 
 function load(){
@@ -499,8 +478,8 @@ function load(){
       const d=localStorage.getItem(key);
       if(d){
         const p=JSON.parse(d);
-        if(p.owned)    STATE.owned     = {...STATE.owned,...p.owned};
-        if(p.exchanges)STATE.exchanges = [...STATE.exchanges,...(p.exchanges||[])];
+        if(p.owned)     STATE.owned    ={...STATE.owned,...p.owned};
+        if(p.exchanges) STATE.exchanges=[...STATE.exchanges,...(p.exchanges||[])];
         if(key!=='panini26v3') localStorage.removeItem(key);
       }
     }catch(e){}
@@ -508,26 +487,16 @@ function load(){
 }
 
 async function initSync(){
-  _ghToken = localStorage.getItem('panini26_ghtoken');
-  if(_ghToken){
-    const ok = await loadFromGH();
-    if(ok) renderAll();
-  } else {
-    setSyncStatus('⚙️ Config requise');
-  }
+  const ok=await loadFromFB();
+  if(ok) renderAll();
 }
 
 async function setupSync(){
-  const token = document.getElementById('gh-token-input').value.trim();
-  if(!token){ toast('Entrez votre token GitHub','warn'); return; }
-  _ghToken = token;
-  localStorage.setItem('panini26_ghtoken', token);
-  const ok = await loadFromGH();
-  if(ok){
-    renderAll();
-    closeModal('sync-modal');
-    toast('✅ Sync GitHub activée !','success');
-  }
+  const url=document.getElementById('fb-url-input').value.trim().replace(/\/$/,'');
+  if(!url){ toast('Entrez l\'URL Firebase','warn'); return; }
+  localStorage.setItem('panini26_fburl', url);
+  const ok=await loadFromFB();
+  if(ok){ renderAll(); closeModal('sync-modal'); toast('✅ Sync activée !','success'); }
 }
 function resetAll(){STATE={owned:{},exchanges:[]};save();renderAll();toast('Réinitialisé','warn');}
 
@@ -786,9 +755,9 @@ function exportData(){
 function openImport(){document.getElementById('import-modal').classList.add('open');}
 function openModal(id){
   document.getElementById(id).classList.add('open');
-  if(id==='sync-modal'&&_ghToken){
-    const el=document.getElementById('gh-token-input');
-    if(el)el.value=_ghToken;
+  if(id==='sync-modal'){
+    const saved=localStorage.getItem('panini26_fburl');
+    if(saved) document.getElementById('fb-url-input').value=saved;
   }
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
