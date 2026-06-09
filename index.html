@@ -164,7 +164,11 @@ textarea:focus{outline:none;border-color:var(--accent)}
 <nav id="nav" style="position:relative">
   <button class="nav-btn active" onclick="showPage('album')" id="nav-album"><span class="nav-icon">📒</span>Album</button>
   <button class="nav-btn" onclick="showPage('exchange')" id="nav-exchange"><span class="nav-icon">🔄</span>Échanges</button>
-  <button id="theme-btn" onclick="toggleTheme()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:1px solid var(--border);border-radius:20px;padding:4px 10px;cursor:pointer;font-size:16px;color:var(--text2);line-height:1" title="Mode jour/nuit">🌙</button>
+  <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:6px">
+    <span id="sync-status" style="font-size:10px;color:var(--text2);white-space:nowrap">☁️</span>
+    <button onclick="openModal('sync-modal')" style="background:none;border:1px solid var(--border);border-radius:20px;padding:3px 8px;cursor:pointer;font-size:14px;color:var(--text2)" title="Configurer la sync">⚙️</button>
+    <button id="theme-btn" onclick="toggleTheme()" style="background:none;border:1px solid var(--border);border-radius:20px;padding:3px 8px;cursor:pointer;font-size:14px;color:var(--text2)" title="Mode jour/nuit">🌙</button>
+  </div>
 </nav>
 <div id="toast"></div>
 
@@ -245,6 +249,28 @@ textarea:focus{outline:none;border-color:var(--accent)}
       <button class="pm-action set2" id="pm-btn2" onclick="pmSet(2)">🔵 Doublon (2×)</button>
       <button class="pm-action set3" id="pm-btn3" onclick="pmSet(3)">🟠 Triplon (3×)</button>
       <button class="pm-action set0" id="pm-btn0" onclick="pmSet(0)">❌ Retirer</button>
+    </div>
+  </div>
+</div>
+
+<!-- SYNC MODAL -->
+<div class="modal-overlay" id="sync-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('sync-modal')">✕</button>
+    <div class="modal-title">☁️ Sync GitHub</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.8">
+      Une seule config, une seule fois :<br>
+      <b>1.</b> <a href="https://github.com/settings/tokens/new" target="_blank" style="color:var(--accent)">Créer un token GitHub</a> → cochez <b>repo</b> → copier<br>
+      <b>2.</b> Coller ci-dessous → Activer<br>
+      <b>3.</b> C'est tout — vos données se synchronisent automatiquement sur tous vos appareils
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Personal Access Token GitHub (<code>ghp_...</code>)</label>
+      <input id="gh-token-input" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="setupSync()">✅ Activer</button>
+      <button class="btn btn-secondary" onclick="closeModal('sync-modal')">Annuler</button>
     </div>
   </div>
 </div>
@@ -383,22 +409,126 @@ let aFilter='all';
 let _pmCode=null;
 let _pressTimer=null;
 
+// ============================================================
+// SYNC — GitHub API (stockage dans le repo GitHub)
+// ============================================================
+const GH_OWNER = 'arikgr';
+const GH_REPO  = 'arikgr';
+const GH_FILE  = 'panini-data.json';
+const GH_BRANCH= 'main';
+let _ghToken = localStorage.getItem('panini26_ghtoken') || null;
+let _ghSha   = null;
+let _saveTimer = null;
+let _syncing = false;
+
+function setSyncStatus(msg, color='var(--text2)'){
+  const el = document.getElementById('sync-status');
+  if(el){ el.textContent=msg; el.style.color=color; }
+}
+
+function ghHeaders(){
+  return {
+    'Authorization': 'token ' + _ghToken,
+    'Content-Type': 'application/json',
+    'Accept': 'application/vnd.github+json'
+  };
+}
+
+async function loadFromGH(){
+  if(!_ghToken){ setSyncStatus('⚙️ Config requise'); return false; }
+  try{
+    setSyncStatus('⏳ Chargement…');
+    const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}?ref=${GH_BRANCH}&t=${Date.now()}`;
+    const r = await fetch(url, { headers: ghHeaders() });
+    if(r.status === 404){
+      // File doesn't exist yet — will be created on first save
+      setSyncStatus('✅ Prêt', 'var(--green)');
+      return true;
+    }
+    if(!r.ok) throw new Error('Erreur '+r.status);
+    const data = await r.json();
+    _ghSha = data.sha;
+    const decoded = JSON.parse(atob(data.content.replace(/\n/g,'')));
+    if(decoded.owned)   STATE.owned     = decoded.owned;
+    if(decoded.exchanges) STATE.exchanges = decoded.exchanges || [];
+    setSyncStatus('✅ Synchronisé', 'var(--green)');
+    return true;
+  }catch(e){
+    setSyncStatus('⚠️ '+e.message, 'var(--orange)');
+    return false;
+  }
+}
+
+async function saveToGH(){
+  if(!_ghToken){ saveLocal(); return; }
+  if(_syncing) return;
+  _syncing = true;
+  setSyncStatus('💾 Sauvegarde…');
+  try{
+    const body = {
+      message: 'panini: update collection',
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(STATE)))),
+      branch:  GH_BRANCH,
+    };
+    if(_ghSha) body.sha = _ghSha;
+    const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`;
+    const r = await fetch(url, { method:'PUT', headers: ghHeaders(), body: JSON.stringify(body) });
+    if(!r.ok){ const e=await r.json(); throw new Error(e.message||r.status); }
+    const data = await r.json();
+    _ghSha = data.content.sha;
+    saveLocal();
+    setSyncStatus('✅ Synchronisé', 'var(--green)');
+  }catch(e){
+    setSyncStatus('⚠️ '+e.message, 'var(--orange)');
+  } finally { _syncing=false; }
+}
+
+function saveLocal(){
+  try{ localStorage.setItem('panini26v3', JSON.stringify(STATE)); }catch(e){}
+}
+
+function save(){
+  saveLocal();
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(()=>saveToGH(), 1500);
+}
+
 function load(){
-  // Migrate from any previous storage key
-  const keys=['panini26v3','panini26v2','panini26'];
-  for(const key of keys){
+  ['panini26v3','panini26v2','panini26'].forEach(key=>{
     try{
       const d=localStorage.getItem(key);
       if(d){
-        const parsed=JSON.parse(d);
-        if(parsed.owned)STATE.owned={...STATE.owned,...parsed.owned};
-        if(parsed.exchanges)STATE.exchanges=[...STATE.exchanges,...(parsed.exchanges||[])];
-        if(key!=='panini26v3') localStorage.removeItem(key); // clean up old keys
+        const p=JSON.parse(d);
+        if(p.owned)    STATE.owned     = {...STATE.owned,...p.owned};
+        if(p.exchanges)STATE.exchanges = [...STATE.exchanges,...(p.exchanges||[])];
+        if(key!=='panini26v3') localStorage.removeItem(key);
       }
     }catch(e){}
+  });
+}
+
+async function initSync(){
+  _ghToken = localStorage.getItem('panini26_ghtoken');
+  if(_ghToken){
+    const ok = await loadFromGH();
+    if(ok) renderAll();
+  } else {
+    setSyncStatus('⚙️ Config requise');
   }
 }
-function save(){try{localStorage.setItem('panini26v3',JSON.stringify(STATE));}catch(e){}}
+
+async function setupSync(){
+  const token = document.getElementById('gh-token-input').value.trim();
+  if(!token){ toast('Entrez votre token GitHub','warn'); return; }
+  _ghToken = token;
+  localStorage.setItem('panini26_ghtoken', token);
+  const ok = await loadFromGH();
+  if(ok){
+    renderAll();
+    closeModal('sync-modal');
+    toast('✅ Sync GitHub activée !','success');
+  }
+}
 function resetAll(){STATE={owned:{},exchanges:[]};save();renderAll();toast('Réinitialisé','warn');}
 
 function calcStats(){
@@ -654,6 +784,13 @@ function exportData(){
   toast('Exporté !','success');
 }
 function openImport(){document.getElementById('import-modal').classList.add('open');}
+function openModal(id){
+  document.getElementById(id).classList.add('open');
+  if(id==='sync-modal'&&_ghToken){
+    const el=document.getElementById('gh-token-input');
+    if(el)el.value=_ghToken;
+  }
+}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function doImport(){
   try{
@@ -690,7 +827,7 @@ function loadTheme(){
     document.getElementById('theme-btn').textContent='🌕';
   }
 }
-load();loadTheme();renderAll();
+load();loadTheme();renderAll();initSync();
 </script>
 </body>
 </html>
