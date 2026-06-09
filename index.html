@@ -13,6 +13,54 @@
   --text:#f1f5f9;--text2:#94a3b8;--text3:#64748b;
   --border:#2d3f5a;--radius:10px;
 }
+body.light{
+  --bg:#f0f4f8;--bg2:#ffffff;--bg3:#e8edf2;--bg4:#dce3ea;
+  --text:#1a2233;--text2:#4a5568;--text3:#718096;
+  --border:#c8d3de;
+  --accent:#1d4ed8;--accent2:#2563eb;
+}
+body.light .alb-sticker.owned{background:#dcf5e7;border-color:#4ade80}
+body.light .alb-sticker.owned .alb-name{color:#166534}
+body.light .alb-sticker.double{background:#dbeafe;border-color:#60a5fa}
+body.light .alb-sticker.triple{background:#fde8d0;border-color:#fb923c}
+body.light .foil-badge{background:#fffbeb;border-color:#f59e0b!important}
+body.light .foil-badge .alb-code{color:#92400e}
+body.light #nav{box-shadow:0 1px 4px rgba(0,0,0,.08)}
+body.light .nav-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+body.light .stat-num{color:var(--accent)}
+body.light .prog-fill{background:linear-gradient(90deg,#1d4ed8,#2563eb)}
+body.light .chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+body.light .dbl-tag{border-color:#93c5fd;color:#1d4ed8;background:#eff6ff}
+body.light .ex-code{color:var(--accent)}
+body.light .exchange-title{color:var(--accent)}
+body.light .group-hdr{color:#64748b}
+body.light .alb-code{color:var(--accent)}
+body.light .album-page-hdr{background:#dce3ea}
+body.light #theme-btn{color:#4a5568}
+body.light{
+  --bg:#f0f4f8;--bg2:#ffffff;--bg3:#e8edf2;--bg4:#dce3ea;
+  --text:#1a2233;--text2:#4a5568;--text3:#718096;
+  --border:#c8d3de;
+  --accent:#1d4ed8;--accent2:#2563eb;
+}
+body.light .alb-sticker.owned{background:#dcf5e7;border-color:#4ade80}
+body.light .alb-sticker.owned .alb-name{color:#166534}
+body.light .alb-sticker.double{background:#dbeafe;border-color:#60a5fa}
+body.light .alb-sticker.triple{background:#fde8d0;border-color:#fb923c}
+body.light .foil-badge{background:#fffbeb;border-color:#f59e0b!important}
+body.light .foil-badge .alb-code{color:#92400e}
+body.light #nav{box-shadow:0 1px 4px rgba(0,0,0,.08)}
+body.light .nav-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+body.light .stat-num{color:var(--accent)}
+body.light .prog-fill{background:linear-gradient(90deg,#1d4ed8,#2563eb)}
+body.light .chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+body.light .dbl-tag{border-color:#93c5fd;color:#1d4ed8;background:#eff6ff}
+body.light .ex-code{color:var(--accent)}
+body.light .exchange-title{color:var(--accent)}
+body.light .group-hdr{color:#64748b}
+body.light .alb-code{color:var(--accent)}
+body.light .album-page-hdr{background:#dce3ea}
+body.light #theme-btn{color:#4a5568}
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;font-size:14px}
 #nav{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;position:sticky;top:0;z-index:100}
 .nav-btn{flex:1;padding:10px 4px;text-align:center;cursor:pointer;font-size:11px;color:var(--text2);border:none;background:none;border-bottom:3px solid transparent;transition:.2s;display:flex;flex-direction:column;align-items:center;gap:2px}
@@ -113,9 +161,10 @@ textarea:focus{outline:none;border-color:var(--accent)}
 </style>
 </head>
 <body>
-<nav id="nav">
+<nav id="nav" style="position:relative">
   <button class="nav-btn active" onclick="showPage('album')" id="nav-album"><span class="nav-icon">📒</span>Album</button>
   <button class="nav-btn" onclick="showPage('exchange')" id="nav-exchange"><span class="nav-icon">🔄</span>Échanges</button>
+  <button id="theme-btn" onclick="toggleTheme()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:1px solid var(--border);border-radius:20px;padding:4px 10px;cursor:pointer;font-size:16px;color:var(--text2);line-height:1" title="Mode jour/nuit">🌙</button>
 </nav>
 <div id="toast"></div>
 
@@ -280,8 +329,8 @@ const TEAM_DATA={
   COL:{name:'Colombie',flag:'🇨🇴',p:['Team Logo','Camilo Vargas','David Ospina','Dávinson Sánchez','Yerry Mina','Daniel Munoz','Johan Mojica','Jhon Lucumí','Santiago Arias','Jefferson Lerma','Kevin Castaño','Richard Rios','Team Photo','James Rodriguez','Juan Fernando Quintero','Jorge Carrascal','Jon Arias','Jhon Cordova','Luis Suarez','Luis Diaz']},
   ENG:{name:'Angleterre',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',p:['Team Logo','Jordan Pickford','John Stones','Marc Guéhi','Ezri Konsa','Trent Alexander-Arnold','Reece James','Dan Burn','Jordan Henderson','Declan Rice','Jude Bellingham','Cole Palmer','Team Photo','Morgan Rogers','Anthony Gordon','Phil Foden','Bukayo Saka','Harry Kane','Marcus Rashford','Ollie Watkins']},
   CRO:{name:'Croatie',flag:'🇭🇷',p:['Team Logo','Dominik Livaković','Duje Caleta-Car','Josko Gvardiol','Josip Stanišić','Luka Vušković','Josip Sutalo','Kristijan Jakic','Luka Modrić','Mateo Kovacic','Lovro Majer','Martin Baturina','Team Photo','Mario Pasalic','Petar Sucic','Ivan Perišić','Marco Pasalic','Ante Budimir','Andrej Kramarić','Franjo Ivanovic']},
-  GHA:{name:'Ghana',flag:'🇬🇭',p:['Team Logo','Lawrence Ati-Zigi','Andy Yiadom','Daniel Amartey','Alexander Djiku','Gideon Mensah','Baba Rahman','Abdul Samed','Thomas Partey','Elisha Owusu','Mohammed Kudus','Osman Bukari','Team Photo','Antoine Semenyo','Kamaldeen Sulemana','Jordan Ayew','Inaki Williams','Felix Afena-Gyan','Ernest Nuamah','Danlad Ibrahim']},
-  PAN:{name:'Panama',flag:'🇵🇦',p:['Team Logo','Luis Mejia','Freddy Gondola','Fidel Escobar','Eric Davis','Andres Andrade','Harold Cummings','Jose Cordoba','Cristian Martinez','Aníbal Godoy','Adalberto Carrasquilla','Ismael Díaz','Team Photo','Édgar Bárcenas','Carlos Harvey','Cecilio Waterman','Jose Fajardo','Roberto Nurse','Jose Luiz Rodriguez','Alberto Quintero']},
+  GHA:{name:'Ghana',flag:'🇬🇭',p:['Team Logo','Lawrence Ati Zigi','Tariq Lamptey','Mohammed Salisu','Alidu Seidu','Alexander Djiku','Gideon Mensah','Caleb Yirenkyi','Abdul Issahaku Fatawu','Thomas Partey','Salis Abdul Samed','Kamaldeen Sulemana','Team Photo','Mohammed Kudus','Inaki Williams','Jordan Ayew','Andrew Ayew','Joseph Paintsil','Osman Bukari','Antoine Semenyo']},
+  PAN:{name:'Panama',flag:'🇵🇦',p:['Team Logo','Orlando Mosquera','Luis Mejia','Fidel Escobar','Andres Andrade','Michael Amir Murillo','Eric Davis','Jose Cordoba','Cesar Blackman','Cristian Martinez','Aníbal Godoy','Adalberto Carrasquilla','Team Photo','Édgar Bárcenas','Carlos Harvey','Ismael Díaz','Jose Fajardo','Cecilio Waterman','Jose Luiz Rodriguez','Alberto Quintero']},
 };
 
 // Build checklist
@@ -313,19 +362,19 @@ GROUPS.forEach(g=>{
   });
 });
 
-// History (FWC9-19)
+// History (FWC9-19) — source: checklistinsider + diamondcardsonline (FOIL)
 [
-  {code:'FWC9', name:'Uruguay 1930'},
-  {code:'FWC10',name:'Italy 1934'},
-  {code:'FWC11',name:'Brazil 1958'},
-  {code:'FWC12',name:'England 1966'},
-  {code:'FWC13',name:'W.Germany 1974'},
-  {code:'FWC14',name:'Argentina 1978'},
-  {code:'FWC15',name:'France 1998'},
-  {code:'FWC16',name:'Spain 2010'},
-  {code:'FWC17',name:'Germany 2014'},
-  {code:'FWC18',name:'France 2018'},
-  {code:'FWC19',name:'Argentina 2022'},
+  {code:'FWC9', name:'Italy 1934',       foil:true},
+  {code:'FWC10',name:'Uruguay 1950',     foil:true},
+  {code:'FWC11',name:'West Germany 1954',foil:true},
+  {code:'FWC12',name:'Brazil 1962',      foil:true},
+  {code:'FWC13',name:'West Germany 1974',foil:true},
+  {code:'FWC14',name:'Argentina 1986',   foil:true},
+  {code:'FWC15',name:'Brazil 1994',      foil:true},
+  {code:'FWC16',name:'Brazil 2002',      foil:true},
+  {code:'FWC17',name:'Italy 2006',       foil:true},
+  {code:'FWC18',name:'Germany 2014',     foil:true},
+  {code:'FWC19',name:'Argentina 2022',   foil:true},
 ].forEach(s=>{s.team='HIST';s.foil=false;CHECKLIST.push(s);LOOKUP[s.code]=s;});
 
 // STATE
@@ -425,6 +474,7 @@ function buildSection(title,flag,stickers,pct,total){
     const el=document.createElement('div');
     el.className='alb-sticker'+(c===1?' owned':c===2?' double':c>=3?' triple':'')+(s.foil?' foil-badge':'');
     el.innerHTML=`<div class="alb-code">${s.code}${s.foil?'<span class="tag-foil">F</span>':''}</div><div class="alb-name">${s.name}</div>${c>=2?`<div class="alb-count">×${c}</div>`:''}`;
+    el.dataset.code=s.code.toUpperCase();
     el.addEventListener('click',()=>cycleS(s.code,el));
     el.addEventListener('contextmenu',(e)=>{e.preventDefault();ctxMenu(e,s.code);});
     grid.appendChild(el);
@@ -432,16 +482,22 @@ function buildSection(title,flag,stickers,pct,total){
   body.appendChild(grid);sec.appendChild(hdr);sec.appendChild(body);return sec;
 }
 
-function cycleS(code,el){
-  code=code.toUpperCase();
-  STATE.owned[code]=(STATE.owned[code]||0)+1;
-  save();renderStats();renderDoubles();renderMissingList();
-  const nc=STATE.owned[code];
+function refreshCell(code,el){
+  // Update a single sticker cell without re-rendering the whole album
+  const nc=STATE.owned[code]||0;
   const s=LOOKUP[code];
   el.className='alb-sticker'+(nc===1?' owned':nc===2?' double':nc>=3?' triple':'')+(s?.foil?' foil-badge':'');
   let cnt=el.querySelector('.alb-count');
   if(nc>=2){if(!cnt){cnt=document.createElement('div');cnt.className='alb-count';el.appendChild(cnt);}cnt.textContent='×'+nc;}
   else if(cnt)cnt.remove();
+}
+
+function cycleS(code,el){
+  code=code.toUpperCase();
+  STATE.owned[code]=(STATE.owned[code]||0)+1;
+  save();renderStats();renderDoubles();renderMissingList();
+  const nc=STATE.owned[code];
+  refreshCell(code,el);
   toast(code+' → ×'+nc,nc===1?'success':'info');
 }
 
@@ -517,7 +573,12 @@ function ctxMenu(e,code){
     b.onclick=()=>{
       if(o.v===0)delete STATE.owned[code.toUpperCase()];
       else STATE.owned[code.toUpperCase()]=o.v;
-      save();renderAll();m.remove();window._ctx=null;
+      save();
+      // Refresh only the affected cell, not the whole album
+      const el=document.querySelector(`.alb-sticker[data-code="${code.toUpperCase()}"]`);
+      if(el) refreshCell(code.toUpperCase(),el);
+      renderStats();renderDoubles();renderMissingList();
+      m.remove();window._ctx=null;
     };
     m.appendChild(b);
   });
@@ -618,7 +679,18 @@ function toast(msg,type=''){
   clearTimeout(_tt);_tt=setTimeout(()=>t.className='',2800);
 }
 
-load();renderAll();
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light');
+  document.getElementById('theme-btn').textContent=isLight?'🌕':'🌙';
+  localStorage.setItem('panini26_theme',isLight?'light':'dark');
+}
+function loadTheme(){
+  if(localStorage.getItem('panini26_theme')==='light'){
+    document.body.classList.add('light');
+    document.getElementById('theme-btn').textContent='🌕';
+  }
+}
+load();loadTheme();renderAll();
 </script>
 </body>
 </html>
